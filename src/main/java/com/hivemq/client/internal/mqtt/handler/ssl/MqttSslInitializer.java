@@ -20,10 +20,7 @@ import com.hivemq.client.internal.mqtt.MqttClientConfig;
 import com.hivemq.client.internal.mqtt.MqttClientSslConfigImpl;
 import com.hivemq.client.internal.util.collections.ImmutableList;
 import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.ssl.SupportedCipherSuiteFilter;
+import io.netty.handler.ssl.*;
 import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.HostnameVerifier;
@@ -31,6 +28,8 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -58,6 +57,7 @@ public final class MqttSslInitializer {
                 sslContext = createSslContext(sslConfig);
                 clientConfig.setCurrentSslContext(sslContext);
             }
+
             sslHandler = sslContext.newHandler(channel.alloc(), serverAddress.getHostString(), serverAddress.getPort());
         } catch (final Throwable t) {
             onError.accept(channel, t);
@@ -65,6 +65,7 @@ public final class MqttSslInitializer {
         }
 
         sslHandler.setHandshakeTimeoutMillis(sslConfig.getHandshakeTimeoutMs());
+
 
         final HostnameVerifier hostnameVerifier = sslConfig.getRawHostnameVerifier();
         if (hostnameVerifier == null) {
@@ -94,6 +95,10 @@ public final class MqttSslInitializer {
 
         return SslContextBuilder.forClient()
                 .trustManager(sslConfig.getRawTrustManagerFactory())
+                .applicationProtocolConfig(new ApplicationProtocolConfig(ApplicationProtocolConfig.Protocol.ALPN,
+                        ApplicationProtocolConfig.SelectorFailureBehavior.FATAL_ALERT,
+                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT, Collections.singletonList("x-amzn-mqtt-ca")
+                ))
                 .keyManager(sslConfig.getRawKeyManagerFactory())
                 .protocols((protocols == null) ? null : protocols.toArray(new String[0]))
                 .ciphers(sslConfig.getRawCipherSuites(), SupportedCipherSuiteFilter.INSTANCE)
