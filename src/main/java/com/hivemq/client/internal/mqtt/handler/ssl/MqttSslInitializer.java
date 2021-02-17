@@ -95,10 +95,11 @@ public final class MqttSslInitializer {
 
         return SslContextBuilder.forClient()
                 .trustManager(sslConfig.getRawTrustManagerFactory())
-                .applicationProtocolConfig(new ApplicationProtocolConfig(ApplicationProtocolConfig.Protocol.ALPN,
-                        ApplicationProtocolConfig.SelectorFailureBehavior.FATAL_ALERT,
-                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT, Collections.singletonList("x-amzn-mqtt-ca")
-                ))
+                .applicationProtocolConfig(new ApplicationProtocolConfig(
+                        ApplicationProtocolConfig.Protocol.ALPN,
+                        ApplicationProtocolConfig.SelectorFailureBehavior.CHOOSE_MY_LAST_PROTOCOL,
+                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                        Collections.singletonList("x-amzn-mqtt-ca")))
                 .keyManager(sslConfig.getRawKeyManagerFactory())
                 .protocols((protocols == null) ? null : protocols.toArray(new String[0]))
                 .ciphers(sslConfig.getRawCipherSuites(), SupportedCipherSuiteFilter.INSTANCE)
